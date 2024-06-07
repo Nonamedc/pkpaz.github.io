@@ -1,21 +1,30 @@
-// Fonction pour charger les images CBZ
-function loadCBZ(file) {
+// Fonction pour charger les fichiers d'archive (CBZ, CBR, ZIP, RAR) et les fichiers JPG
+function loadFile(file) {
   const reader = new FileReader();
   reader.onload = function(e) {
-    const zip = new JSZip();
-    zip.loadAsync(e.target.result).then(function(zip) {
-      const images = [];
-      zip.forEach((relativePath, zipEntry) => {
-        if (!zipEntry.dir && /\.(jpg|jpeg|png)$/i.test(relativePath)) {
-          images.push(zipEntry.async('blob').then(blob => URL.createObjectURL(blob)));
-        }
-      });
-      Promise.all(images).then(urls => {
-        displayImages(urls);
-      });
-    });
+    if (/\.(cbr|cbz|zip|rar)$/i.test(file.name)) {
+      loadArchive(e.target.result);
+    } else if (/\.(jpg|jpeg)$/i.test(file.name)) {
+      displayImages([URL.createObjectURL(file)]);
+    }
   };
   reader.readAsArrayBuffer(file);
+}
+
+// Fonction pour charger les fichiers d'archive (CBZ, CBR, ZIP, RAR)
+function loadArchive(data) {
+  const zip = new JSZip();
+  zip.loadAsync(data).then(function(zip) {
+    const images = [];
+    zip.forEach((relativePath, zipEntry) => {
+      if (!zipEntry.dir && /\.(jpg|jpeg|png)$/i.test(relativePath)) {
+        images.push(zipEntry.async('blob').then(blob => URL.createObjectURL(blob)));
+      }
+    });
+    Promise.all(images).then(urls => {
+      displayImages(urls);
+    });
+  });
 }
 
 // Fonction pour afficher les images avec OpenSeadragon
@@ -60,10 +69,10 @@ function displayImages(imageUrls) {
   });
 }
 
-// Charger le fichier CBZ lorsque l'utilisateur le sélectionne
+// Charger le fichier lorsque l'utilisateur le sélectionne
 document.getElementById('fileInput').addEventListener('change', function(e) {
   const file = e.target.files[0];
   if (file) {
-    loadCBZ(file);
+    loadFile(file);
   }
 });
